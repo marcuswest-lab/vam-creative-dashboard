@@ -107,6 +107,7 @@ const KPI = {
   roas: { green:1.8, yellow:1.6 },
   costConnected: { green:300, yellow:400 },
   cps: { green:750, yellow:1000 },
+  connClose: { green:40, yellow:30 },
   hookRate: { green:30, yellow:20 },
   holdRate: { green:20, yellow:15 }
 };
@@ -115,7 +116,7 @@ function ccBadge(v, metric) {
   if (v == null) return 'nd';
   const k = KPI[metric];
   if (!k) return 'nd';
-  if (metric === 'roas' || metric === 'hookRate' || metric === 'holdRate') {
+  if (metric === 'roas' || metric === 'hookRate' || metric === 'holdRate' || metric === 'connClose') {
     if (v >= k.green) return 'wk';
     if (v >= k.yellow) return 'of';
     return 'ak';
@@ -154,9 +155,9 @@ function renderTabs() {
 function renderLegend() {
   const tab = TABS.find(t => t.id === activeTab);
   let html = `
-    <div class="legend-item"><div class="legend-dot green"></div>ROAS ≥ 1.8x | $/Connected ≤ $300</div>
-    <div class="legend-item"><div class="legend-dot yellow"></div>ROAS 1.6–1.8x | $/Connected $300–$400</div>
-    <div class="legend-item"><div class="legend-dot red"></div>ROAS < 1.6x | $/Connected > $400</div>
+    <div class="legend-item"><div class="legend-dot green"></div>ROAS ≥ 1.8x | $/Connected ≤ $300 | Close ≥ 40%</div>
+    <div class="legend-item"><div class="legend-dot yellow"></div>ROAS 1.6–1.8x | $/Connected $300–$400 | Close 30–40%</div>
+    <div class="legend-item"><div class="legend-dot red"></div>ROAS < 1.6x | $/Connected > $400 | Close < 30%</div>
     <div class="legend-item"><div class="legend-dot gray"></div>No Data</div>
   `;
   if (tab.hasVideo) {
@@ -229,7 +230,7 @@ function renderTable() {
   }
 
   cols.push(
-    { key:'connClose', label:'Close %', sortable:true, fmt:fmtP },
+    { key:'connClose', label:'Close %', sortable:true, fmt:fmtP, badge:'connClose' },
     { key:'sales', label:'Sales', sortable:true, fmt:fmtN },
     { key:'cps', label:'CAC', sortable:true, fmt:fmtD, badge:'cps' },
     { key:'revenue', label:'Revenue', sortable:true, fmt:fmtD },
