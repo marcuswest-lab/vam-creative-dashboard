@@ -25,14 +25,20 @@ h1{font-size:28px;font-weight:700;color:#F8FAFC;text-align:center;margin-bottom:
 .filter-btn{padding:7px 14px;background:#151922;border:1px solid #334155;border-radius:8px;color:#94A3B8;font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;transition:all .15s}
 .filter-btn:hover{color:#CBD5E1;border-color:#475569}
 .filter-btn.active{background:#334155;color:#E2E8F0;border-color:#475569}
-.cf-group{display:inline-flex;align-items:center;gap:6px;padding:4px 6px 4px 10px;background:#151922;border:1px solid #334155;border-radius:8px}
-.cf-group .cf-label{font-size:11px;color:#64748B;text-transform:uppercase;letter-spacing:.5px;margin-right:2px}
+.cf-wrap{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;padding:10px 12px;background:#151922;border:1px solid #1E293B;border-radius:10px}
+.cf-header{display:flex;align-items:center;gap:10px;font-size:11px;color:#64748B;text-transform:uppercase;letter-spacing:.5px}
+.cf-add{padding:5px 12px;background:#1E293B;border:1px solid #334155;border-radius:6px;color:#94A3B8;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif}
+.cf-add:hover{color:#E2E8F0;border-color:#475569}
+.cf-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.cf-connector{padding:5px 10px;background:#0C0F14;border:1px solid #334155;border-radius:6px;color:#FBBF24;font-family:'JetBrains Mono',monospace;font-size:11px;cursor:pointer;font-weight:600;min-width:64px}
 .cf-select,.cf-input{padding:5px 8px;background:#0C0F14;border:1px solid #334155;border-radius:6px;color:#E2E8F0;font-family:'DM Sans',sans-serif;font-size:12px;outline:none}
-.cf-select:focus,.cf-input:focus{border-color:#3B82F6}
-.cf-select{cursor:pointer;min-width:120px}
-.cf-input{width:90px;font-family:'JetBrains Mono',monospace}
-.cf-clear{padding:5px 10px;background:transparent;border:none;color:#64748B;font-size:11px;cursor:pointer;border-radius:6px}
-.cf-clear:hover{color:#F87171;background:#1a1f2e}
+.cf-select:focus,.cf-input:focus,.cf-connector:focus{border-color:#3B82F6}
+.cf-select{cursor:pointer;min-width:130px}
+.cf-op{min-width:60px;cursor:pointer}
+.cf-input{width:100px;font-family:'JetBrains Mono',monospace}
+.cf-remove{padding:4px 8px;background:transparent;border:none;color:#64748B;font-size:14px;cursor:pointer;border-radius:6px;line-height:1}
+.cf-remove:hover{color:#F87171;background:#1a1f2e}
+.cf-empty{color:#475569;font-size:12px;font-style:italic}
 .tab-bar{display:inline-flex;background:#151922;border-radius:10px;border:1px solid #1E293B;margin-bottom:14px;width:fit-content}
 .tab{padding:9px 18px;font-size:13px;font-weight:500;color:#64748B;cursor:pointer;border-right:1px solid #1E293B;transition:all .15s;white-space:nowrap;user-select:none}
 .tab:last-child{border-right:none}
@@ -82,18 +88,11 @@ tbody tr:hover td.col-idx,tbody tr:hover td.col-name{background:#1a1f2e}
 <input type="text" class="search-input" id="search" placeholder="Search creatives...">
 <button class="filter-btn" id="btn-winners" onclick="toggleFilter('winners')">Winners Only</button>
 <button class="filter-btn" id="btn-spend" onclick="toggleFilter('spend')">Min $1,500 Spend</button>
-<div class="cf-group">
-<span class="cf-label">Custom</span>
-<select class="cf-select" id="cf-metric"><option value="">Metric...</option></select>
-<select class="cf-select" id="cf-op" style="min-width:60px">
-<option value="gte">&ge;</option>
-<option value="gt">&gt;</option>
-<option value="lte">&le;</option>
-<option value="lt">&lt;</option>
-</select>
-<input type="number" step="any" class="cf-input" id="cf-val" placeholder="value">
-<button class="cf-clear" id="cf-clear" onclick="clearCustomFilter()">&times;</button>
 </div>
+
+<div class="cf-wrap">
+<div class="cf-header"><span>Custom filters</span><button class="cf-add" onclick="addCondition()">+ Add condition</button></div>
+<div id="cf-rows"></div>
 </div>
 
 <div class="tab-bar" id="tabBar"></div>
@@ -138,9 +137,7 @@ let sortDir = 'desc';
 let filterWinners = false;
 let filterSpend = false;
 let searchTerm = '';
-let cfMetric = '';
-let cfOp = 'gte';
-let cfVal = null;
+let conditions = []; // [{metric, op, val, connector}]
 
 function ccBadge(v, metric){
   if(v==null||v===0) return 'nd';
@@ -197,23 +194,70 @@ function buildTabBar(){
   });
   document.getElementById('tabBar').innerHTML=html;
 }
-function switchTab(k){activeTab=k;sortCol='cost';sortDir='desc';buildTabBar();updateLegend();populateMetricDropdown();renderTable();}
-function populateMetricDropdown(){
-  const sel=document.getElementById('cf-metric');
-  const cols=COLS[activeTab];
-  const prev=cfMetric;
-  let html='<option value="">Metric...</option>';
-  // Always include Spend as the first selectable
-  cols.forEach(c=>{html+='<option value="'+c[0]+'">'+c[1]+'</option>';});
-  sel.innerHTML=html;
-  // Restore selection if the metric still exists in this tab
-  if(prev && cols.some(c=>c[0]===prev)){sel.value=prev;}else{cfMetric='';sel.value='';}
+function switchTab(k){activeTab=k;sortCol='cost';sortDir='desc';buildTabBar();updateLegend();renderConditions();renderTable();}
+function addCondition(){
+  conditions.push({metric:'',op:'gte',val:null,connector:'AND'});
+  renderConditions();
 }
-function clearCustomFilter(){
-  cfMetric='';cfVal=null;
-  document.getElementById('cf-metric').value='';
-  document.getElementById('cf-val').value='';
+function removeCondition(i){
+  conditions.splice(i,1);
+  renderConditions();
   renderTable();
+}
+function updateCondition(i,field,value){
+  if(field==='val') value = (value===''?null:parseFloat(value));
+  conditions[i][field]=value;
+  renderTable();
+}
+function renderConditions(){
+  const cols=COLS[activeTab];
+  const host=document.getElementById('cf-rows');
+  if(!conditions.length){host.innerHTML='<div class="cf-empty">No conditions \u2014 click \u201C+ Add condition\u201D to filter by any metric.</div>';return;}
+  let html='';
+  conditions.forEach((c,i)=>{
+    html+='<div class="cf-row">';
+    if(i===0){html+='<span class="cf-connector" style="background:transparent;border:none;color:#475569;cursor:default;text-align:right">WHERE</span>';}
+    else{
+      html+='<select class="cf-connector" onchange="updateCondition('+i+',\'connector\',this.value)">';
+      html+='<option value="AND"'+(c.connector==='AND'?' selected':'')+'>AND</option>';
+      html+='<option value="OR"'+(c.connector==='OR'?' selected':'')+'>OR</option>';
+      html+='</select>';
+    }
+    html+='<select class="cf-select" onchange="updateCondition('+i+',\'metric\',this.value)">';
+    html+='<option value="">Metric...</option>';
+    cols.forEach(col=>{html+='<option value="'+col[0]+'"'+(c.metric===col[0]?' selected':'')+'>'+col[1]+'</option>';});
+    html+='</select>';
+    html+='<select class="cf-select cf-op" onchange="updateCondition('+i+',\'op\',this.value)">';
+    html+='<option value="gte"'+(c.op==='gte'?' selected':'')+'>\u2265</option>';
+    html+='<option value="gt"'+(c.op==='gt'?' selected':'')+'>></option>';
+    html+='<option value="lte"'+(c.op==='lte'?' selected':'')+'>\u2264</option>';
+    html+='<option value="lt"'+(c.op==='lt'?' selected':'')+'><</option>';
+    html+='</select>';
+    html+='<input type="number" step="any" class="cf-input" placeholder="value" value="'+(c.val==null?'':c.val)+'" oninput="updateCondition('+i+',\'val\',this.value)">';
+    html+='<button class="cf-remove" onclick="removeCondition('+i+')" title="Remove">\u2715</button>';
+    html+='</div>';
+  });
+  host.innerHTML=html;
+}
+function evalConditions(r){
+  if(!conditions.length) return true;
+  const active=conditions.filter(c=>c.metric && c.val!=null);
+  if(!active.length) return true;
+  let result=null;
+  for(const c of active){
+    const v=r[c.metric];
+    let ok;
+    if(v==null) ok=false;
+    else if(c.op==='gte') ok=v>=c.val;
+    else if(c.op==='gt')  ok=v>c.val;
+    else if(c.op==='lte') ok=v<=c.val;
+    else if(c.op==='lt')  ok=v<c.val;
+    else ok=false;
+    if(result===null) result=ok;
+    else if(c.connector==='OR') result=result||ok;
+    else result=result&&ok;
+  }
+  return result===null?true:result;
 }
 function toggleFilter(t){
   if(t==='winners'){filterWinners=!filterWinners;document.getElementById('btn-winners').classList.toggle('active');}
@@ -228,17 +272,7 @@ function renderTable(){
   if(searchTerm){const st=searchTerm.toLowerCase();rows=rows.filter(r=>r.name.toLowerCase().includes(st));}
   if(filterWinners){rows=rows.filter(r=>r.roas!=null&&r.roas>=1.7);}
   if(filterSpend){rows=rows.filter(r=>r.cost!=null&&r.cost>=1500);}
-  if(cfMetric&&cfVal!=null){
-    rows=rows.filter(r=>{
-      const v=r[cfMetric];
-      if(v==null) return false;
-      if(cfOp==='gte') return v>=cfVal;
-      if(cfOp==='gt')  return v>cfVal;
-      if(cfOp==='lte') return v<=cfVal;
-      if(cfOp==='lt')  return v<cfVal;
-      return true;
-    });
-  }
+  rows=rows.filter(evalConditions);
   rows.sort((a,b)=>{
     let va=a[sortCol],vb=b[sortCol];
     if(sortCol==='name'){
@@ -287,10 +321,7 @@ function doSort(col){
 }
 function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 document.getElementById('search').addEventListener('input',function(e){searchTerm=e.target.value;renderTable();});
-document.getElementById('cf-metric').addEventListener('change',function(e){cfMetric=e.target.value;renderTable();});
-document.getElementById('cf-op').addEventListener('change',function(e){cfOp=e.target.value;renderTable();});
-document.getElementById('cf-val').addEventListener('input',function(e){const v=e.target.value;cfVal=v===''?null:parseFloat(v);renderTable();});
-buildTabBar();updateLegend();populateMetricDropdown();renderTable();
+buildTabBar();updateLegend();renderConditions();renderTable();
 </script>
 </body>
 </html>
