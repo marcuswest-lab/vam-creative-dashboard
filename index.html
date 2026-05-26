@@ -186,7 +186,7 @@ function renderTable(){
   let rows=[...DATA[activeTab]];
   const total=rows.length;
   if(searchTerm){const st=searchTerm.toLowerCase();rows=rows.filter(r=>r.name.toLowerCase().includes(st));}
-  if(filterWinners){rows=rows.filter(r=>(r.roas!=null&&r.roas>=1.8)||(r.costConnected!=null&&r.costConnected<=300));}
+  if(filterWinners){rows=rows.filter(r=>r.roas!=null&&r.roas>=1.7);}
   if(filterSpend){rows=rows.filter(r=>r.cost!=null&&r.cost>=1500);}
   rows.sort((a,b)=>{
     let va=a[sortCol],vb=b[sortCol];
