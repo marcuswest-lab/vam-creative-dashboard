@@ -346,5 +346,140 @@ function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(
 document.getElementById('search').addEventListener('input',function(e){searchTerm=e.target.value;renderTable();});
 buildTabBar();updateLegend();renderConditions();renderTable();
 </script>
+<!-- AWARENESS_OVERLAY_BEGIN -->
+<style id="awx-style">
+#awx-tab.awx-tab{cursor:pointer}
+#awx-overlay{position:fixed;inset:0;z-index:9999;background:rgba(6,8,12,.97);overflow-y:auto;
+ display:none;padding:28px 22px 60px;font-family:'DM Sans',sans-serif;color:#E2E8F0}
+#awx-overlay.open{display:block}
+.awx-wrap{max-width:1500px;margin:0 auto}
+.awx-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px}
+.awx-h1{font-size:24px;font-weight:700;color:#F8FAFC}
+.awx-close{background:#151922;border:1px solid #334155;color:#CBD5E1;border-radius:8px;
+ padding:7px 14px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif}
+.awx-close:hover{border-color:#475569;color:#fff}
+.awx-sub{font-size:13px;color:#94A3B8;margin-bottom:14px}
+.awx-banner{background:#1c1407;border:1px solid #6b4e10;color:#FBBF24;border-radius:8px;
+ padding:8px 12px;font-size:12px;margin-bottom:16px;line-height:1.5}
+.awx-toggles{display:flex;gap:20px;margin-bottom:16px;flex-wrap:wrap}
+.awx-tg{display:flex;gap:7px;align-items:center}
+.awx-lbl{font-size:11px;color:#64748B;text-transform:uppercase;letter-spacing:.05em;margin-right:3px}
+.awx-btn{padding:6px 14px;background:#151922;border:1px solid #334155;border-radius:8px;
+ color:#94A3B8;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif}
+.awx-btn:hover{color:#CBD5E1;border-color:#475569}
+.awx-btn.on{background:#1D4ED8;color:#fff;border-color:#2563EB}
+.awx-legend{font-size:12px;color:#64748B;margin-bottom:14px}
+.awx-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin:0 4px 0 10px;vertical-align:middle}
+.awx-g{background:#34D399}.awx-y{background:#FBBF24}.awx-r{background:#F87171}
+table.awx-tbl{width:100%;border-collapse:collapse;background:#151922;border-radius:12px;overflow:hidden}
+.awx-tbl th{background:#1E293B;color:#CBD5E1;font-size:11px;text-transform:uppercase;
+ letter-spacing:.03em;padding:10px 11px;text-align:right;font-weight:600;white-space:nowrap}
+.awx-tbl th:first-child{text-align:left}
+.awx-tbl td{padding:10px 11px;text-align:right;font-size:13px;border-top:1px solid #1E293B;
+ font-family:'JetBrains Mono','DM Sans',monospace;white-space:nowrap}
+.awx-tbl td:first-child{text-align:left;font-family:'DM Sans',sans-serif;font-weight:600;color:#F1F5F9}
+.awx-tbl tr:hover td{background:#1A1F2B}
+.awx-tg-green{color:#34D399}.awx-tg-yellow{color:#FBBF24}.awx-tg-red{color:#F87171}.awx-muted{color:#64748B}
+.awx-note{font-size:11px;color:#64748B;margin-top:12px;line-height:1.5}
+</style>
+
+<div id="awx-overlay"><div class="awx-wrap">
+ <div class="awx-top"><div><div class="awx-h1" id="awx-title"></div>
+   <div class="awx-sub" id="awx-subtitle"></div></div>
+   <button class="awx-close" onclick="awxClose()">✕ Close</button></div>
+ <div class="awx-banner" id="awx-banner"></div>
+ <div class="awx-toggles">
+  <div class="awx-tg"><span class="awx-lbl">Dimension</span>
+   <button class="awx-btn on" data-d="awareness" onclick="awxSet('dim','awareness',this)">Awareness Level</button>
+   <button class="awx-btn" data-d="leadtype" onclick="awxSet('dim','leadtype',this)">Lead Type</button></div>
+  <div class="awx-tg"><span class="awx-lbl">Segment</span>
+   <button class="awx-btn on" data-s="All" onclick="awxSet('seg','All',this)">All</button>
+   <button class="awx-btn" data-s="Static" onclick="awxSet('seg','Static',this)">Static</button>
+   <button class="awx-btn" data-s="Video" onclick="awxSet('seg','Video',this)">Video</button></div>
+ </div>
+ <div class="awx-legend" id="awx-legend"></div>
+ <table class="awx-tbl"><thead id="awx-thead"></thead><tbody id="awx-tbody"></tbody></table>
+ <div class="awx-note" id="awx-note"></div>
+</div></div>
+<script>
+(function(){
+ var P={"name": "VAM (Value Added Moving)", "targets": "Cost/Connected \u2264 $250 \u00b7 CAC \u2264 $750 \u00b7 ROAS \u2265 2.0", "cols": [{"label": "Spend", "fmt": "money"}, {"label": "Leads", "fmt": "int"}, {"label": "CPL", "fmt": "money"}, {"label": "Connected", "fmt": "int"}, {"label": "Cost/Conn", "fmt": "money", "good": 250, "warn": 375, "higher": false}, {"label": "Sales", "fmt": "int"}, {"label": "CAC", "fmt": "money", "good": 750, "warn": 1125, "higher": false}, {"label": "Revenue", "fmt": "money"}, {"label": "ROAS", "fmt": "x", "good": 2.0, "warn": 1.5, "higher": true}, {"label": "CTR", "fmt": "pct"}], "orders": {"awareness": ["Problem Aware", "Solution Aware", "Most Aware", "Unaware", "Unclassified"], "leadtype": ["Offer", "Problem-Solution", "Story", "Promise", "Secret", "Proclamation", "Unclassified"]}, "data": {"awareness": {"All": {"Unclassified": {"Ads": 218, "Spend": 873445.04, "Leads": 15041.0, "CPL": 58.0709, "Connected": 3148.0, "Cost/Conn": 277.4603, "Sales": 616.0, "CAC": 1417.9303, "Revenue": 1027116.74, "ROAS": 1.1759, "CTR": 32.0517}, "Problem Aware": {"Ads": 326, "Spend": 892283.13, "Leads": 14673.0, "CPL": 60.8112, "Connected": 3071.0, "Cost/Conn": 290.5513, "Sales": 600.0, "CAC": 1487.1385, "Revenue": 1150966.9, "ROAS": 1.2899, "CTR": 31.9296}, "Most Aware": {"Ads": 156, "Spend": 92047.02, "Leads": 1216.0, "CPL": 75.6966, "Connected": 349.0, "Cost/Conn": 263.745, "Sales": 53.0, "CAC": 1736.7362, "Revenue": 109654.18, "ROAS": 1.1913, "CTR": 45.4967}, "Solution Aware": {"Ads": 289, "Spend": 636041.88, "Leads": 9700.0, "CPL": 65.5713, "Connected": 1919.0, "Cost/Conn": 331.4444, "Sales": 422.0, "CAC": 1507.2082, "Revenue": 769140.93, "ROAS": 1.2093, "CTR": 30.4136}, "Unaware": {"Ads": 1, "Spend": 209.25, "Leads": 0.0, "CPL": 0.0, "Connected": 0.0, "Cost/Conn": 0.0, "Sales": 0.0, "CAC": 0.0, "Revenue": 0.0, "ROAS": 0.0, "CTR": 28.3011}}, "Static": {"Unclassified": {"Ads": 172, "Spend": 853689.6, "Leads": 14727.0, "CPL": 57.9677, "Connected": 3105.0, "Cost/Conn": 274.9403, "Sales": 608.0, "CAC": 1404.0947, "Revenue": 1016191.23, "ROAS": 1.1904, "CTR": 32.1359}, "Problem Aware": {"Ads": 262, "Spend": 761312.66, "Leads": 12199.0, "CPL": 62.4078, "Connected": 2718.0, "Cost/Conn": 280.1003, "Sales": 516.0, "CAC": 1475.4121, "Revenue": 966129.12, "ROAS": 1.269, "CTR": 33.5869}, "Most Aware": {"Ads": 139, "Spend": 86627.49, "Leads": 1127.0, "CPL": 76.8656, "Connected": 332.0, "Cost/Conn": 260.9262, "Sales": 51.0, "CAC": 1698.5782, "Revenue": 105824.23, "ROAS": 1.2216, "CTR": 47.5465}, "Solution Aware": {"Ads": 151, "Spend": 175527.78, "Leads": 2614.0, "CPL": 67.1491, "Connected": 613.0, "Cost/Conn": 286.3422, "Sales": 119.0, "CAC": 1475.0234, "Revenue": 214289.14, "ROAS": 1.2208, "CTR": 49.6213}, "Unaware": {"Ads": 1, "Spend": 209.25, "Leads": 0.0, "CPL": 0.0, "Connected": 0.0, "Cost/Conn": 0.0, "Sales": 0.0, "CAC": 0.0, "Revenue": 0.0, "ROAS": 0.0, "CTR": 28.3011}}, "Video": {"Unclassified": {"Ads": 46, "Spend": 19755.44, "Leads": 314.0, "CPL": 62.9154, "Connected": 43.0, "Cost/Conn": 459.4288, "Sales": 8.0, "CAC": 2469.43, "Revenue": 10925.51, "ROAS": 0.553, "CTR": 28.4147}, "Solution Aware": {"Ads": 138, "Spend": 460514.1, "Leads": 7086.0, "CPL": 64.9893, "Connected": 1306.0, "Cost/Conn": 352.6142, "Sales": 303.0, "CAC": 1519.8485, "Revenue": 554851.79, "ROAS": 1.2049, "CTR": 23.0925}, "Problem Aware": {"Ads": 64, "Spend": 130970.47, "Leads": 2474.0, "CPL": 52.9388, "Connected": 353.0, "Cost/Conn": 371.0212, "Sales": 84.0, "CAC": 1559.1723, "Revenue": 184837.78, "ROAS": 1.4113, "CTR": 22.2963}, "Most Aware": {"Ads": 17, "Spend": 5419.53, "Leads": 89.0, "CPL": 60.8936, "Connected": 17.0, "Cost/Conn": 318.7959, "Sales": 2.0, "CAC": 2709.765, "Revenue": 3829.95, "ROAS": 0.7067, "CTR": 12.7312}}}, "leadtype": {"All": {"Unclassified": {"Ads": 218, "Spend": 873445.04, "Leads": 15041.0, "CPL": 58.0709, "Connected": 3148.0, "Cost/Conn": 277.4603, "Sales": 616.0, "CAC": 1417.9303, "Revenue": 1027116.74, "ROAS": 1.1759, "CTR": 32.0517}, "Offer": {"Ads": 278, "Spend": 823425.5, "Leads": 13297.0, "CPL": 61.9257, "Connected": 2872.0, "Cost/Conn": 286.708, "Sales": 558.0, "CAC": 1475.6729, "Revenue": 1038536.32, "ROAS": 1.2612, "CTR": 33.019}, "Proclamation": {"Ads": 34, "Spend": 16158.01, "Leads": 161.0, "CPL": 100.3603, "Connected": 29.0, "Cost/Conn": 557.1728, "Sales": 5.0, "CAC": 3231.602, "Revenue": 8423.63, "ROAS": 0.5213, "CTR": 30.3779}, "Promise": {"Ads": 37, "Spend": 82710.84, "Leads": 1500.0, "CPL": 55.1406, "Connected": 229.0, "Cost/Conn": 361.1827, "Sales": 62.0, "CAC": 1334.0458, "Revenue": 119659.38, "ROAS": 1.4467, "CTR": 22.8072}, "Problem-Solution": {"Ads": 190, "Spend": 488114.28, "Leads": 7619.0, "CPL": 64.0654, "Connected": 1439.0, "Cost/Conn": 339.2038, "Sales": 311.0, "CAC": 1569.4993, "Revenue": 602171.83, "ROAS": 1.2337, "CTR": 23.6698}, "Secret": {"Ads": 51, "Spend": 33033.36, "Leads": 504.0, "CPL": 65.5424, "Connected": 132.0, "Cost/Conn": 250.2527, "Sales": 21.0, "CAC": 1573.0171, "Revenue": 34956.63, "ROAS": 1.0582, "CTR": 53.0757}, "Story": {"Ads": 182, "Spend": 177139.29, "Leads": 2508.0, "CPL": 70.6297, "Connected": 638.0, "Cost/Conn": 277.6478, "Sales": 118.0, "CAC": 1501.1804, "Revenue": 226014.22, "ROAS": 1.2759, "CTR": 51.686}}, "Static": {"Unclassified": {"Ads": 172, "Spend": 853689.6, "Leads": 14727.0, "CPL": 57.9677, "Connected": 3105.0, "Cost/Conn": 274.9403, "Sales": 608.0, "CAC": 1404.0947, "Revenue": 1016191.23, "ROAS": 1.1904, "CTR": 32.1359}, "Offer": {"Ads": 251, "Spend": 775532.48, "Leads": 12533.0, "CPL": 61.8792, "Connected": 2759.0, "Cost/Conn": 281.0919, "Sales": 532.0, "CAC": 1457.7678, "Revenue": 990433.01, "ROAS": 1.2771, "CTR": 33.4374}, "Proclamation": {"Ads": 26, "Spend": 7770.83, "Leads": 64.0, "CPL": 121.4192, "Connected": 11.0, "Cost/Conn": 706.4391, "Sales": 1.0, "CAC": 7770.83, "Revenue": 2000.0, "ROAS": 0.2574, "CTR": 40.5735}, "Promise": {"Ads": 21, "Spend": 21005.45, "Leads": 291.0, "CPL": 72.1837, "Connected": 65.0, "Cost/Conn": 323.1608, "Sales": 14.0, "CAC": 1500.3893, "Revenue": 20513.04, "ROAS": 0.9766, "CTR": 20.5379}, "Problem-Solution": {"Ads": 77, "Spend": 33131.91, "Leads": 384.0, "CPL": 86.281, "Connected": 117.0, "Cost/Conn": 283.1787, "Sales": 17.0, "CAC": 1948.9359, "Revenue": 41433.17, "ROAS": 1.2506, "CTR": 36.7409}, "Secret": {"Ads": 31, "Spend": 23748.38, "Leads": 383.0, "CPL": 62.0062, "Connected": 109.0, "Cost/Conn": 217.875, "Sales": 13.0, "CAC": 1826.7985, "Revenue": 22141.56, "ROAS": 0.9323, "CTR": 67.8275}, "Story": {"Ads": 147, "Spend": 162488.13, "Leads": 2285.0, "CPL": 71.1108, "Connected": 602.0, "Cost/Conn": 269.9138, "Sales": 109.0, "CAC": 1490.7168, "Revenue": 209721.71, "ROAS": 1.2907, "CTR": 54.7621}}, "Video": {"Unclassified": {"Ads": 46, "Spend": 19755.44, "Leads": 314.0, "CPL": 62.9154, "Connected": 43.0, "Cost/Conn": 459.4288, "Sales": 8.0, "CAC": 2469.43, "Revenue": 10925.51, "ROAS": 0.553, "CTR": 28.4147}, "Problem-Solution": {"Ads": 113, "Spend": 454982.37, "Leads": 7235.0, "CPL": 62.8863, "Connected": 1322.0, "Cost/Conn": 344.1622, "Sales": 294.0, "CAC": 1547.5591, "Revenue": 560738.66, "ROAS": 1.2324, "CTR": 22.7179}, "Promise": {"Ads": 16, "Spend": 61705.39, "Leads": 1209.0, "CPL": 51.0384, "Connected": 164.0, "Cost/Conn": 376.2524, "Sales": 48.0, "CAC": 1285.529, "Revenue": 99146.34, "ROAS": 1.6068, "CTR": 23.5797}, "Proclamation": {"Ads": 8, "Spend": 8387.18, "Leads": 97.0, "CPL": 86.4658, "Connected": 18.0, "Cost/Conn": 465.9544, "Sales": 4.0, "CAC": 2096.795, "Revenue": 6423.63, "ROAS": 0.7659, "CTR": 20.9316}, "Offer": {"Ads": 27, "Spend": 47893.02, "Leads": 764.0, "CPL": 62.6872, "Connected": 113.0, "Cost/Conn": 423.832, "Sales": 26.0, "CAC": 1842.0392, "Revenue": 48103.31, "ROAS": 1.0044, "CTR": 26.2432}, "Story": {"Ads": 35, "Spend": 14651.16, "Leads": 223.0, "CPL": 65.7003, "Connected": 36.0, "Cost/Conn": 406.9767, "Sales": 9.0, "CAC": 1627.9067, "Revenue": 16292.51, "ROAS": 1.112, "CTR": 17.5708}, "Secret": {"Ads": 20, "Spend": 9284.98, "Leads": 121.0, "CPL": 76.7354, "Connected": 23.0, "Cost/Conn": 403.6948, "Sales": 8.0, "CAC": 1160.6225, "Revenue": 12815.07, "ROAS": 1.3802, "CTR": 15.3446}}}}, "coverage": {"awareness": {"tagged": 772, "total": 990}, "leadtype": {"tagged": 772, "total": 990}}, "labels": {"awareness": "Awareness Level", "leadtype": "Lead Type"}};
+ var dim='awareness',seg='All';
+ window.awxOpen=function(){document.getElementById('awx-overlay').classList.add('open');awxRender();};
+ window.awxClose=function(){document.getElementById('awx-overlay').classList.remove('open');};
+ window.awxSet=function(kind,val,btn){
+   if(kind==='dim'){dim=val;document.querySelectorAll('[data-d]').forEach(function(b){b.classList.toggle('on',b===btn);});}
+   else{seg=val;document.querySelectorAll('[data-s]').forEach(function(b){b.classList.toggle('on',b===btn);});}
+   awxRender();
+ };
+ function fmt(v,f){
+   if(f==='money')return v?'$'+Math.round(v).toLocaleString():'\u2013';
+   if(f==='int')return Math.round(v).toLocaleString();
+   if(f==='x')return v?v.toFixed(2):'\u2013';
+   if(f==='pct')return (v*100).toFixed(2)+'%';
+   return v;
+ }
+ function cls(v,c){
+   if(c.good===undefined)return '';
+   if(v===0)return 'awx-muted';
+   if(c.higher)return v>=c.good?'awx-tg-green':v>=c.warn?'awx-tg-yellow':'awx-tg-red';
+   return v<=c.good?'awx-tg-green':v<=c.warn?'awx-tg-yellow':'awx-tg-red';
+ }
+ function awxRender(){
+   document.getElementById('awx-title').textContent=P.name+' \u2014 Awareness & Lead Type';
+   document.getElementById('awx-subtitle').textContent=P.labels[dim]+' \u00b7 All-Time \u00b7 '+seg+' ads';
+   document.getElementById('awx-legend').innerHTML=
+     '<span class="awx-dot awx-g"></span>On target<span class="awx-dot awx-y"></span>Within 1.5\u00d7<span class="awx-dot awx-r"></span>Off target &nbsp;&nbsp; Targets: '+P.targets;
+   var cov=P.coverage[dim];var pct=Math.round(100*cov.tagged/Math.max(cov.total,1));
+   var bn=document.getElementById('awx-banner');
+   if(pct>=70){bn.style.display='none';}
+   else{bn.style.display='block';bn.innerHTML='Only <b>'+cov.tagged+' of '+cov.total+'</b> ads ('+pct+'%) carry a '+P.labels[dim].toLowerCase()+' tag via CID \u2014 the rest predate the naming switchover and sit in <b>Unclassified</b>, which holds most of the spend. Read the tagged rows as directional until coverage grows.';}
+   var cols=P.cols,order=P.orders[dim],rows=P.data[dim][seg];
+   var th='<tr><th>'+P.labels[dim]+'</th><th>Ads</th>'+cols.map(function(c){return '<th>'+c.label+'</th>';}).join('')+'</tr>';
+   document.getElementById('awx-thead').innerHTML=th;
+   document.getElementById('awx-tbody').innerHTML=order.map(function(l){
+     var r=rows[l];if(!r||(r.Ads===0))return '';
+     var tds='<td>'+l+'</td><td>'+r.Ads+'</td>'+cols.map(function(c){
+        var v=r[c.label];return '<td class="'+cls(v,c)+'">'+fmt(v,c.fmt)+'</td>';}).join('');
+     return '<tr>'+tds+'</tr>';
+   }).join('');
+   document.getElementById('awx-note').innerHTML='Awareness Level &amp; Lead Type joined from the 2.0 Creative Tracker to the Creative &amp; Copy Tracking Sheet performance tabs on CID. Unclassified = ads with no CID / dimension tag (mostly pre-switchover). All-time figures.';
+ }
+})();
+</script>
+<script>
+/* Add an "Awareness / Lead Type" tab to the dashboard's existing tab bar that
+   opens the overlay above.  Renderer-agnostic: clones a sibling tab so styling
+   matches, neutralises the original tab behaviour, and re-adds itself if the
+   renderer rebuilds the bar. */
+(function(){
+ function bar(){return document.getElementById('tabBar')||document.querySelector('.tab-bar')
+   ||document.querySelector('.tabbar')||document.querySelector('.tabs-bar')||document.querySelector('.tabs')
+   ||document.getElementById('tabs')||document.querySelector('[role=tablist]');}
+ function add(){
+   var b=bar();if(!b)return false;
+   if(document.getElementById('awx-tab'))return true;
+   var s=b.querySelector('button,a,[data-tab],.tab');
+   var t;
+   if(s){t=s.cloneNode(true);t.removeAttribute('onclick');t.removeAttribute('href');
+     t.setAttribute('data-tab','__awx__');}
+   else{t=document.createElement('button');}
+   t.id='awx-tab';t.classList.add('awx-tab');
+   ['active','on','sel','current','sorted','selected'].forEach(function(c){t.classList.remove(c);});
+   t.textContent='▦ Awareness / Lead Type';
+   t.addEventListener('click',function(e){e.preventDefault();e.stopImmediatePropagation();
+     if(window.awxOpen)awxOpen();},true);
+   b.appendChild(t);return true;
+ }
+ var n=0,iv=setInterval(function(){n++;if(add()||n>60)clearInterval(iv);},120);
+ if(window.MutationObserver){
+   var mo=new MutationObserver(function(){if(!document.getElementById('awx-tab'))add();});
+   document.addEventListener('DOMContentLoaded',function(){var b=bar();
+     if(b&&b.parentNode)mo.observe(b.parentNode,{childList:true,subtree:true});});
+ }
+ document.addEventListener('DOMContentLoaded',add);
+})();
+</script>
+<!-- AWARENESS_OVERLAY_END -->
 </body>
 </html>
