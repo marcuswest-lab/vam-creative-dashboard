@@ -90,10 +90,6 @@ tbody tr:hover td.col-idx,tbody tr:hover td.col-name{background:#1a1f2e}
 <p class="subtitle">Value Added Moving &mdash; All-Time Performance Data | Generated June 24, 2026</p>
 
 
-<div class="bi-tabs">
-  <button class="bi-tab active" id="bi-tab-table" type="button">Performance Table</button>
-  <button class="bi-tab" id="bi-tab-insights" type="button">Insights &amp; Forecaster</button>
-</div>
 <div class="bi-wrap bi-panel">
   <div class="bi-cards"><div class="bi-card"><div class="bi-card-label">Static Win Rate</div><div class="bi-card-val">2.9%</div><div class="bi-card-sub">16/550 launched</div></div><div class="bi-card"><div class="bi-card-label">Static $/Winner</div><div class="bi-card-val">$6,162</div><div class="bi-card-sub">avg lifetime spend</div></div><div class="bi-card"><div class="bi-card-label">Video Win Rate</div><div class="bi-card-val">6.1%</div><div class="bi-card-sub">12/196 launched</div></div><div class="bi-card"><div class="bi-card-label">Video $/Winner</div><div class="bi-card-val">$15,551</div><div class="bi-card-sub">avg lifetime spend</div></div><div class="bi-card"><div class="bi-card-label">Blended Win Rate</div><div class="bi-card-val">3.8%</div><div class="bi-card-sub">28/746 launched</div></div><div class="bi-card"><div class="bi-card-label">Blended $/Winner</div><div class="bi-card-val">$10,186</div><div class="bi-card-sub">avg lifetime spend</div></div><div class="bi-card"><div class="bi-card-label">Top-3 Avg Winner</div><div class="bi-card-val">$57,378</div><div class="bi-card-sub">top 3 winners, blended</div></div><div class="bi-card"><div class="bi-card-label">Top Winner</div><div class="bi-card-val">$127,500</div><div class="bi-card-sub">single best winner</div></div></div>
   <div class="bi-batch">
@@ -128,18 +124,14 @@ tbody tr:hover td.col-idx,tbody tr:hover td.col-name{background:#1a1f2e}
   </div>
 </div>
 <style>
-.bi-tabs{max-width:1700px;margin:0 auto 14px;display:inline-flex;background:#151922;border:1px solid #1E293B;border-radius:10px;overflow:hidden}
-.bi-tab{padding:9px 18px;font-size:13px;font-weight:600;color:#64748B;cursor:pointer;background:transparent;border:none;border-right:1px solid #1E293B;font-family:'DM Sans',sans-serif;transition:all .15s}
-.bi-tab:last-child{border-right:none}
-.bi-tab:hover{color:#CBD5E1}
-.bi-tab.active{background:#3B82F6;color:#fff}
 .bi-panel{display:none}
 body.bi-show-insights .bi-panel{display:block}
 body.bi-show-insights .legend,
 body.bi-show-insights .controls,
+body.bi-show-insights .control-bar,
+body.bi-show-insights .filters,
 body.bi-show-insights .cf-wrap,
 body.bi-show-insights #cf-wrap,
-body.bi-show-insights .tab-bar,
 body.bi-show-insights .table-wrap,
 body.bi-show-insights .row-count{display:none !important}
 .bi-wrap{max-width:1700px;margin:0 auto 22px}
@@ -218,16 +210,40 @@ body.bi-show-insights .row-count{display:none !important}
   ['bi-daily','bi-basis','bi-wr'].forEach(function(id){
     document.getElementById(id).addEventListener('input',render);
   });
-  var tTable=document.getElementById('bi-tab-table'), tIns=document.getElementById('bi-tab-insights');
-  tTable.addEventListener('click',function(){
-    document.body.classList.remove('bi-show-insights');
-    tTable.classList.add('active'); tIns.classList.remove('active');
-  });
-  tIns.addEventListener('click',function(){
-    document.body.classList.add('bi-show-insights');
-    tIns.classList.add('active'); tTable.classList.remove('active');
-    render();
-  });
+  function setupTab(){
+    var bar=document.getElementById('tabBar')||document.getElementById('tabs');
+    if(!bar) return;
+    function addTab(){
+      var ex=document.getElementById('bi-native-tab');
+      if(ex) return ex;
+      var t=document.createElement('div');
+      t.className='tab'; t.id='bi-native-tab'; t.innerHTML='Insights &amp; Forecaster';
+      t.addEventListener('click',function(e){e.stopPropagation();showInsights();});
+      bar.appendChild(t);
+      return t;
+    }
+    function showInsights(){
+      document.body.classList.add('bi-show-insights');
+      Array.prototype.forEach.call(bar.querySelectorAll('.tab'),function(x){x.classList.remove('active');});
+      addTab().classList.add('active');
+      render();
+    }
+    function hideInsights(){
+      document.body.classList.remove('bi-show-insights');
+      var t=document.getElementById('bi-native-tab'); if(t) t.classList.remove('active');
+    }
+    addTab();
+    bar.addEventListener('click',function(e){
+      var el=e.target&&e.target.closest?e.target.closest('.tab'):null;
+      if(el&&el.id!=='bi-native-tab') hideInsights();
+    },true);
+    if(typeof window.buildTabBar==='function'){
+      var ob=window.buildTabBar;
+      window.buildTabBar=function(){var r=ob.apply(this,arguments);addTab();return r;};
+    }
+  }
+  if(document.readyState==='loading') window.addEventListener('DOMContentLoaded',setupTab);
+  else setupTab();
   render();
 })();
 </script>
