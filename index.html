@@ -95,7 +95,7 @@ tbody tr:hover td.col-idx,tbody tr:hover td.col-name{background:#1a1f2e}
   <div class="bi-batch">
     <div class="bi-batch-head">
       <span class="bi-batch-title">Batch Forecaster</span>
-      <span class="bi-batch-note">Creatives &amp; batches/week to sustain spend &middot; status-classifier winners, no safety margin</span>
+      <span class="bi-batch-note">Creatives &amp; batches/week to sustain spend &middot; status-classifier winners &middot; safety margin over-produces creatives</span>
     </div>
     <div class="bi-batch-controls">
       <label class="bi-ctl">Spend/day
@@ -106,10 +106,17 @@ tbody tr:hover td.col-idx,tbody tr:hover td.col-name{background:#1a1f2e}
           <option value="avg">Avg $/winner ($10,186)</option>
           <option value="top3">Top-3 avg ($57,378)</option>
           <option value="top">Top winner ($127,500)</option>
+          <option value="custom">Custom…</option>
         </select>
+      </label>
+      <label class="bi-ctl" id="bi-custom-wrap" style="display:none">Custom winner spend
+        <input type="number" id="bi-basis-custom" value="10186" min="0" step="500">
       </label>
       <label class="bi-ctl">Win rate <span id="bi-wr-out" class="bi-wr-out">15%</span>
         <input type="range" id="bi-wr" min="1" max="30" step="1" value="15">
+      </label>
+      <label class="bi-ctl">Safety margin %
+        <input type="number" id="bi-sm" value="0" min="0" step="5">
       </label>
     </div>
     <div class="bi-batch-grid" id="bi-grid"></div>
@@ -169,25 +176,36 @@ body.bi-show-insights .row-count{display:none !important}
   var VIDEO_MIX=0.70, STATIC_MIX=0.30, VIDEO_BATCH=5, STATIC_BATCH=7;
   function basisVal(){
     var k=document.getElementById('bi-basis').value;
+    if(k==='custom'){
+      var c=parseFloat(document.getElementById('bi-basis-custom').value);
+      return (c>0)?c:null;
+    }
     return BI[k];
   }
+  function syncCustom(){
+    var custom=document.getElementById('bi-basis').value==='custom';
+    document.getElementById('bi-custom-wrap').style.display=custom?'':'none';
+  }
   function fmt(n){return n==null?'\u2014':n.toLocaleString('en-US',{maximumFractionDigits:1});}
-  function calc(daily, basis, wr){
+  function calc(daily, basis, wr, margin){
     if(!basis||!wr) return null;
+    var m=1+(margin||0);
     var weekly=daily*7;
     var winners=weekly/basis;
-    var vMake=winners*VIDEO_MIX/wr;
-    var sMake=winners*STATIC_MIX/wr;
+    var vMake=winners*VIDEO_MIX/wr*m;
+    var sMake=winners*STATIC_MIX/wr*m;
     var creatives=vMake+sMake;
     var batches=vMake/VIDEO_BATCH+sMake/STATIC_BATCH;
     return {winners:winners, creatives:creatives, batches:batches};
   }
   function render(){
+    syncCustom();
     var daily=parseFloat(document.getElementById('bi-daily').value)||0;
     var basis=basisVal();
     var wr=parseFloat(document.getElementById('bi-wr').value)/100;
     document.getElementById('bi-wr-out').textContent=Math.round(wr*100)+'%';
-    var r=calc(daily, basis, wr);
+    var margin=(parseFloat(document.getElementById('bi-sm').value)||0)/100;
+    var r=calc(daily, basis, wr, margin);
     var grid=document.getElementById('bi-grid');
     if(!r){grid.innerHTML='<div class="bi-stat" style="grid-column:1/-1"><div class="bi-stat-label">Insufficient winner data</div><div class="bi-stat-val" style="color:#64748B">\u2014</div></div>';}
     else{
@@ -200,14 +218,14 @@ body.bi-show-insights .row-count{display:none !important}
     var presets=[0.10,0.15,0.20];
     var tb=document.getElementById('bi-ptbody'), rows='';
     presets.forEach(function(p){
-      var rr=calc(daily, basis, p);
+      var rr=calc(daily, basis, p, margin);
       if(!rr){rows+='<tr><td>'+(p*100)+'%</td><td>\u2014</td><td>\u2014</td><td>\u2014</td></tr>';}
       else{rows+='<tr><td>'+(p*100)+'%</td><td>'+fmt(rr.winners)+'</td><td>'+Math.ceil(rr.creatives)+'</td><td>'+fmt(rr.batches)+'</td></tr>';}
     });
     tb.innerHTML=rows;
   }
   function stat(l,v){return '<div class="bi-stat"><div class="bi-stat-label">'+l+'</div><div class="bi-stat-val">'+v+'</div></div>';}
-  ['bi-daily','bi-basis','bi-wr'].forEach(function(id){
+  ['bi-daily','bi-basis','bi-basis-custom','bi-wr','bi-sm'].forEach(function(id){
     document.getElementById(id).addEventListener('input',render);
   });
   function setupTab(){
