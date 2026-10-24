@@ -975,5 +975,55 @@ redraw();
 </script>
 
 <!-- CARD_VIEW_END -->
+<!-- WINRATES_TAB_START -->
+<style>
+#wr-panel{display:none;margin:4px 0 24px}
+#wr-panel iframe{width:100%;border:0;min-height:900px;background:transparent;display:block}
+body.wr-show #wr-panel{display:block}
+.wr-tabs{display:flex;gap:6px;justify-content:center;margin:14px auto 6px}
+.wr-tabs .bi-tab{background:#151922;border:1px solid #232a3a;color:#94A3B8;border-radius:999px;padding:8px 16px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.wr-tabs .bi-tab.active{background:#3B82F6;border-color:#3B82F6;color:#fff}
+</style>
+<script>
+(function(){
+  var bar=document.querySelector('.bi-tabs');
+  if(!bar){  // no tab bar on this page (BRV): add one under the subtitle
+    var sub=document.querySelector('[data-dates-link]')||document.querySelector('.subtitle');
+    bar=document.createElement('div'); bar.className='bi-tabs wr-tabs';
+    bar.innerHTML='<button class="bi-tab active" id="wr-tab-perf" type="button">Performance</button>';
+    var anchor=sub; while(anchor&&anchor.nextElementSibling&&/DATES_LINK|dates-link/.test(anchor.nextElementSibling.outerHTML.slice(0,200))){anchor=anchor.nextElementSibling;}
+    (anchor||document.body.firstElementChild).insertAdjacentElement('afterend',bar);
+  }
+  var btn=document.createElement('button'); btn.className='bi-tab'; btn.id='wr-tab'; btn.type='button'; btn.textContent='Win rates';
+  bar.appendChild(btn);
+  var panel=document.createElement('div'); panel.id='wr-panel';
+  bar.insertAdjacentElement('afterend',panel);
+  var hidden=[];
+  function show(){
+    if(!panel.firstChild){
+      var f=document.createElement('iframe'); f.src='winrates.html'; f.title='Creative win rates';
+      f.addEventListener('load',function(){
+        try{var d=f.contentDocument; var fit=function(){f.style.height=(d.documentElement.scrollHeight+20)+'px';};
+            fit(); new ResizeObserver(fit).observe(d.body);}catch(e){}
+      });
+      panel.appendChild(f);
+    }
+    hidden=[]; var el=panel.nextElementSibling;
+    while(el){ if(el.tagName!=='SCRIPT'&&el.tagName!=='STYLE'&&el.style.display!=='none'){hidden.push(el); el.style.display='none';} el=el.nextElementSibling; }
+    document.body.classList.add('wr-show');
+    bar.querySelectorAll('.bi-tab').forEach(function(b){b.classList.toggle('active',b===btn);});
+  }
+  function hide(){
+    if(!document.body.classList.contains('wr-show')) return;
+    hidden.forEach(function(el){el.style.display='';}); hidden=[];
+    document.body.classList.remove('wr-show'); btn.classList.remove('active');
+  }
+  btn.addEventListener('click',show);
+  bar.querySelectorAll('.bi-tab').forEach(function(b){ if(b!==btn) b.addEventListener('click',function(){
+    hide(); if(b.id==='wr-tab-perf') b.classList.add('active'); }); });
+  if(location.hash==='#win-rates') show();
+})();
+</script>
+<!-- WINRATES_TAB_END -->
 </body>
 </html>
